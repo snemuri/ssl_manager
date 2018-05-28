@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 import os
+import io
 import sys
 import logging
 import json
 import yaml
 import base64
 import subprocess
+import ConfigParser
 from optparse import OptionParser
 import configs  # configs.py from ambari
 
@@ -68,6 +70,19 @@ export OOZIE_CLIENT_OPTS="${OOZIE_CLIENT_OPTS} -Doozie.connection.retry.count=5 
 
     Note: Make sure Ext JS library is Installed and UI is already enabled.
     """
+DISABLE_OOZIE_UI = \
+    """
+    Select Oozie > Configs, then select Advanced oozie-env and remove the following properties:
+
+export OOZIE_HTTPS_PORT=11443
+export OOZIE_HTTPS_KEYSTORE_FILE=/etc/security/certificates/keystore.jks
+export OOZIE_HTTPS_KEYSTORE_PASS=hadoop
+export OOZIE_CLIENT_OPTS="${OOZIE_CLIENT_OPTS} -Doozie.connection.retry.count=5 -Djavax.net.ssl.trustStore=/etc/security/certificates/truststore.jks -Djavax.net.ssl.trustStorePassword=hadoop"
+
+    Login to Oozie server and run: su -l oozie -c "/usr/hdp/current/oozie-server/bin/oozie-setup.sh prepare-war"
+
+    Note: Make sure Ext JS library is Installed and UI is already enabled.
+    """
 
 ATLAS_UI = \
     """
@@ -92,7 +107,7 @@ def generate_ca(properties, host):
     """
     Generated a CA and server certificates for all the provided hosts using Tls toolkit.\
     Please copy the keystore.jks and truststore.jks files under host directory to respective hosts at /etc/security/certificates/
-    Change the permissions to '755' using "chmod 755 /etc/security/certificates/*"
+    Change the permissions to '750' using "chmod 750 /etc/security/certificates/*"
     """
     try:
         os.path.exists(CA_DIR)
@@ -100,10 +115,9 @@ def generate_ca(properties, host):
         raise
     logger.info("Using {0} as base path.".format(CA_DIR))
     if os.path.exists(properties):
-        ca_props = read_ca_conf_file(properties)
+        ca_props = read_ca_conf_file(properties, "caprops")
         logger.debug("CA properties are:".format(ca_props))
-        get_opdir = ca_props.index('--outputDirectory')
-        opdir = os.path.abspath(ca_props[get_opdir+1])
+        opdir = os.path.abspath(read_conf_file(properties, "caprops", "outputDirectory"))
         toolkit_cmd = ['java', '-jar', '-Xms12m', '-Xmx24m', CA_DIR + '/lib/ssl_manager-1.5.0-jar-with-dependencies.jar'
                        , 'standalone', '--certificateAuthorityHostname', host]
         create_ca = toolkit_cmd + ca_props
@@ -118,12 +132,12 @@ def generate_ca(properties, host):
     return
 
 
-def generate_ambari_specific(host, outputDirectory):
+def generate_ambari_specific(host, outputdirectory):
     ambari_host = host
-    ambari_keystore = os.path.join(outputDirectory, ambari_host, 'keystore.jks')
-    ambari_p12 = os.path.join(outputDirectory, ambari_host, 'ambari-keystore.p12')
-    ambari_pem = os.path.join(outputDirectory, ambari_host, 'ambari-keystore.pem')
-    ambari_crt = os.path.join(outputDirectory, ambari_host, 'ambari-keystore.crt')
+    ambari_keystore = os.path.join(outputdirectory, ambari_host, 'keystore.jks')
+    ambari_p12 = os.path.join(outputdirectory, ambari_host, 'ambari-keystore.p12')
+    ambari_pem = os.path.join(outputdirectory, ambari_host, 'ambari-keystore.pem')
+    ambari_crt = os.path.join(outputdirectory, ambari_host, 'ambari-keystore.crt')
 
     logger.info("Keystore is:{0}".format(ambari_keystore))
     logger.info("P12 is:{0}".format(ambari_p12))
@@ -196,11 +210,10 @@ def put_configs(config):
 
 def get_password(properties, pwd_type):
     password = ""
-    conf = read_conf_file(properties)
     if pwd_type is "keyStorePassword":
-        password = base64.b64decode(conf['keyStorePassword'])
+        password = base64.b64decode(read_conf_file(properties, "caprops", "keyStorePassword"))
     elif pwd_type is "trustStorePassword":
-        password = base64.b64decode(conf['trustStorePassword'])
+        password = base64.b64decode(read_conf_file(properties, "caprops", "trustStorePassword"))
     return password
 
 
@@ -270,10 +283,10 @@ def disable_configs(service, accessor, cluster):
 
 
 def copy_certs(properties, ssh_key, scpusername):
-    conf = read_conf_file(properties)
-    opdir = os.path.abspath(conf['outputDirectory'])
-    host_list = conf['hostnames']
+    opdir = os.path.abspath(read_conf_file(properties, "caprops", "outputDirectory"))
+    host_list = read_conf_file(properties, "caprops", "hostnames")
     ssh_key = os.path.expanduser(ssh_key)
+    ownership = "root:hadoop"
     for host in host_list.split(','):
         logger.info(host)
         source = os.path.join(opdir, host)+'/*'
@@ -286,62 +299,53 @@ def copy_certs(properties, ssh_key, scpusername):
         logger.info("Copying certs to host {0}".format(host))
         subprocess.Popen(scp_command, shell=True).communicate()
         logger.info("Changing the permissions..")
-        subprocess.Popen(['ssh', '-o', 'StrictHostKeyChecking=no', '-i', ssh_key, userhost, 'chmod', '-R', '755',
+        subprocess.Popen(['ssh', '-o', 'StrictHostKeyChecking=no', '-i', ssh_key, userhost, 'chmod', '-R', '750',
                           CERT_DIR]).communicate()
+        logger.info("Changing the ownership of certificates..")
+        subprocess.Popen(['ssh', '-o', 'StrictHostKeyChecking=no', '-i', ssh_key, userhost, 'chown', '-R', ownership,
+                         CERT_DIR]).communicate()
     return
 
 
-def read_ca_conf_file(file_path):
+def read_ca_conf_file(properties, section):
     """
-    Parse the configuration file, and return a dictionary of key, value pairs.
-    Ignore any lines that begin with #
-    :param file_path: Properties file to parse.
-    :return: List with key, value pairs.
+    :param properties: property file
+    :param section: section name
+    :return: Returns the list of key-value pairs in a given section
     """
     ca_props = []
-    if os.path.exists(file_path):
-        with open(file_path, "r") as f:
-            lines = f.readlines()
-        if lines:
-            logger.debug("Reading file {0}, has {1} lines.".format(file_path, len(lines)))
-            for l in lines:
-                l = l.replace(" ", "").strip()
-                if l.startswith("#"):
-                    continue
-                parts = l.split("=")
-                if len(parts) >= 2:
-                    if parts[0] == "keyStorePassword":
-                        parts[1] = keystorepassword
-                    elif parts[0] == "trustStorePassword":
-                        parts[1] = truststorepassword
-                    ca_props.append("--"+parts[0])
-                    ca_props.append(parts[1])
+    keypass = keystorepassword
+    trustpass = truststorepassword
+    if os.path.exists(properties):
+        with open(properties) as f:
+            ca_config = f.read()
+        config = ConfigParser.RawConfigParser()
+        config.optionxform = str
+        config.readfp(io.BytesIO(ca_config))
+        for options in config.options(section):
+            ca_props.append("--" + options)
+            config.set(section, "keyStorePassword", keypass)
+            config.set(section, "trustStorePassword", trustpass)
+            ca_props.append(config.get(section, options))
     return ca_props
 
 
-def read_conf_file(file_path):
+def read_conf_file(properties, section, key):
     """
-    Parse the configuration file, and return a dictionary of key, value pairs.
-    Ignore any lines that begin with #
-    :param file_path: Properties file to parse.
-    :return: Dictionary with key, value pairs.
+    :param properties: property file
+    :param section: section name
+    :param key: key
+    :return: Returns the value of a key in a given section
     """
-    ca_props = {}
-    if os.path.exists(file_path):
-        with open(file_path, "r") as f:
-            lines = f.readlines()
-            if lines:
-                logger.debug("Reading file {0}, has {1} lines.".format(file_path, len(lines)))
-                for l in lines:
-                    l = l.replace(" ","").strip()
-                    if l.startswith("#"):
-                        continue
-                    parts = l.split("=")
-                    if len(parts) >= 2:
-                        prop = parts[0]
-                        value = "".join(parts[1:])
-                        ca_props[prop] = value
-    return ca_props
+    value = ""
+    if os.path.exists(properties):
+        with open(properties) as f:
+            ca_config = f.read()
+        config = ConfigParser.RawConfigParser()
+        config.optionxform = str
+        config.readfp(io.BytesIO(ca_config))
+        value = config.get(section, key)
+    return value
 
 
 def delete_properties(cluster, config_type, args, accessor):
@@ -378,12 +382,18 @@ def disable_ui(uis, cluster):
                 if i == "AMBARIUI":
                     logger.info("Disabling ssl for {0}".format(i))
                     subprocess.Popen(disable_ambari_ui()).communicate()
+                elif i == "OOZIE":
+                    logger.info("Please follow below instructions to disable SSL for Oozie.")
+                    logger.info(DISABLE_OOZIE_UI)
                 else:
                     logger.info("Disabling ssl for {0}".format(i))
                     disable_configs(i.upper(), accessor, cluster)
         else:
             if u_name == "AMBARIUI":
                 subprocess.Popen(disable_ambari_ui()).communicate()
+            elif u_name == "OOZIE":
+                logger.info("Please follow below instructions to disable SSL for Oozie.")
+                logger.info(DISABLE_OOZIE_UI)
             else:
                 disable_configs(u_name, accessor, cluster)
     return
@@ -512,6 +522,12 @@ def main():
     stdout_handler.setLevel(loglevel)
     stdout_handler.setFormatter(formatter)
     logger.addHandler(stdout_handler)
+
+    try:
+        import yaml
+    except Exception, e:
+        logger.error("Need to install PyYAML package to use yaml. E.g., yum install PyYAML\n")
+        sys.exit(1)
 
     logger.debug("In verbose mode...\nCli args are:{0}".format(options))
 

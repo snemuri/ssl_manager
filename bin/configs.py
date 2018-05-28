@@ -110,7 +110,8 @@ def create_new_desired_config(cluster, config_type, properties, attributes, acce
       DESIRED_CONFIGS: {
         TYPE: config_type,
         TAG: new_tag,
-        PROPERTIES: properties
+        PROPERTIES: properties,
+        "service_config_version_note": "Updated by SSL Manager"
       }
     }
   }
