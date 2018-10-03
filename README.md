@@ -3,8 +3,7 @@
 
 Steps to run the SSL Manager: 
 
-- Set java `export JAVA_HOME=<path to java>`
-- Update ca.properties with CA properties, Keystore & truststore passwords and the hostnames of cluster.
+- Update ca.properties with java home, CA properties, Keystore & truststore passwords and the hostnames of cluster.
 - To enable ssl for all services and ui's :
 `./bin/ssl_manager.py --ca --properties=conf/ca.properties --scpKeyFile=<pem> --enable-ssl --service=all --ui=all  --host <ambari-host> --cluster <clustername>`
 - To disable ssl for all services and ui's :
@@ -20,22 +19,24 @@ Options:
   --ca                  Create a CA using tls toolkit.
   --properties=PROPERTIES
                         ca.properties file which is used to create a CA.
+  --isOverwrite         Overwrite existing certificates.
   --scpKeyFile=SCPKEYFILE
                         sshkey to copy the certificates to all the hosts.
   --scpUserName=SCPUSERNAME
                         username to copy the certificates to all the hosts.
+                        Default is current user.
+  --crtChown=CRTCHOWN   Ownership of all the certificates to all the hosts.
+                        Default is 'root:hadoop'
   --enable-ssl          Enables ssl for HDP stack.
   --disable-ssl         Disables ssl for HDP stack.
   --service=SERVICE     Comma separated list of services for which SSL needs
                         to be enabled.'all' or comma seperated services.
-                        Available configs are:['HDFS', 'YARN', 'MRSHUFFLE',
-                        'TEZ', 'HIVE', 'KAFKA', 'RANGER', 'SPARK', 'SPARK2',
-                        'RANGERADMIN', 'RANGERPLUGINS']
+                        Available configs are: HDFS,MRSHUFFLE,TEZ,HIVE,KAFKA,S
+                        PARK,SPARK2,RANGERADMIN,RANGERPLUGINS
   --ui=UI               Comma separated list of UI's for which SSL needs to be
                         enabled. 'all' or comma seperated uis. Available ui's
-                        are:['HDFSUI', 'YARN', 'MAPREDUCE2UI', 'HBASE', 'OOZIE',
-                        'AMBARI_INFRA', 'ATLAS', 'ZEPPELIN', 'STORM',
-                        'AMBARIUI'].
+                        are: HDFSUI,YARN,MAPREDUCE2UI,HBASE,OOZIE,AMBARI_INFRA
+                        ,AMBARI_INFRA_SOLR,ATLAS,ZEPPELIN,STORM,AMBARI.
   --user=USER           Optional user ID to use for ambari authentication.
                         Default is 'admin'
   --password=PASSWORD   Optional password to use for ambari authentication.

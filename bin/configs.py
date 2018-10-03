@@ -56,6 +56,7 @@ CLUSTERS_URL = '/api/v1/clusters/{0}'
 DESIRED_CONFIGS_URL = CLUSTERS_URL + '?fields=Clusters/desired_configs'
 CONFIGURATION_URL = CLUSTERS_URL + '/configurations?type={1}&tag={2}'
 SERVICES_URL = CLUSTERS_URL + '/services'
+VERSION_URL = '/api/v1/services/AMBARI/components/AMBARI_SERVER?fields=RootServiceComponents/component_version'
 
 FILE_FORMAT = \
 """
@@ -124,6 +125,7 @@ def create_new_desired_config(cluster, config_type, properties, attributes, acce
   accessor(CLUSTERS_URL.format(cluster), PUT_REQUEST_TYPE, request_body)
   logger.info('### NEW Site:{0}, Tag:{1}'.format(config_type, new_tag))
 
+
 def get_current_config(cluster, config_type, accessor):
   config_tag = get_config_tag(cluster, config_type, accessor)
   logger.info("### on (Site:{0}, Tag:{1})".format(config_type, config_tag))
@@ -133,7 +135,7 @@ def get_current_config(cluster, config_type, accessor):
   return current_config[PROPERTIES], current_config.get(ATTRIBUTES, {})
 
 
-def get_installed_services (cluster, accessor):
+def get_installed_services(cluster, accessor):
   installed_services = []
   logger.info("### Fetching installed services..")
   response = accessor(SERVICES_URL.format(cluster))
@@ -144,9 +146,18 @@ def get_installed_services (cluster, accessor):
   return installed_services
 
 
+def get_ambari_version(accessor):
+  logger.info("### Fetching ambari version..")
+  response = accessor(VERSION_URL)
+  version_response = json.loads(response)
+  ambari_version = version_response['RootServiceComponents']['component_version']
+  return ambari_version
+
+
 def update_config(cluster, config_type, config_updater, accessor):
   properties, attributes = config_updater(cluster, config_type, accessor)
   create_new_desired_config(cluster, config_type, properties, attributes, accessor)
+
 
 def update_specific_property(config_name, config_value):
   def update(cluster, config_type, accessor):
@@ -223,7 +234,7 @@ def output_to_file(filename):
   return output
 
 def output_to_console(config):
-  print json.dumps(config, indent=2)
+  return
 
 def get_config(cluster, config_type, accessor, output):
   properties, attributes = get_current_config(cluster, config_type, accessor)
@@ -274,8 +285,8 @@ def get_properties(cluster, config_type, args, accessor):
     filename = args[0]
     output = output_to_file(filename)
     logger.info('### to file "{0}"'.format(filename))
-  # else:
-  #   output = output_to_console
+  else:
+    output = output_to_console
   get_config(cluster, config_type, accessor, output)
   return
 

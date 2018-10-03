@@ -1,0 +1,175 @@
+HADOOP:
+  - config_type: core-site
+    delete: true
+    hadoop.ssl.require.client.cert: false
+    hadoop.ssl.hostname.verifier: DEFAULT
+    hadoop.ssl.keystores.factory.class: org.apache.hadoop.security.ssl.FileBasedKeyStoresFactory
+    hadoop.ssl.server.conf: ssl-server.xml
+    hadoop.ssl.client.conf: ssl-client.xml
+
+HDFS:
+  - config_type: core-site
+    hadoop.rpc.protection: authentication
+
+  - config_type: hdfs-site
+    dfs.encrypt.data.transfer: false
+
+HDFSUI:
+  - config_type: hdfs-site
+    dfs.http.policy: HTTP_ONLY
+    dfs.https.enable: false
+
+MRSHUFFLE:
+  - config_type: mapred-site
+    mapreduce.shuffle.ssl.enabled: false
+
+MAPREDUCE2UI:
+  - config_type: mapred-site
+    mapreduce.jobhistory.http.policy: HTTP_ONLY
+
+YARN:
+  - config_type: yarn-site
+    yarn.http.policy: HTTP_ONLY
+    yarn.log.server.url: $historyserver
+    yarn.log.server.web-service.url: $timelineserver
+
+  - config_type: yarn-site
+    delete: true
+    yarn.nodemanager.webapp.https.address: 0.0.0.0:8042
+
+TEZ:
+  - config_type: tez-site
+    tez.runtime.shuffle.ssl.enable: false
+    tez.runtime.shuffle.keep-alive.enabled: false
+
+KAFKA:
+  - config_type: kafka-broker
+    delete: true
+    ssl.keystore.location: $keystore
+    ssl.keystore.password: $keystorepassword
+    ssl.key.password: $keystorepassword
+    ssl.truststore.location: $truststore
+    ssl.truststore.password: $truststorepassword
+
+HIVE:
+  - config_type: hiveserver2-site
+    hive.server2.use.SSL: false
+
+AMBARI_INFRA_SOLR:
+  - config_type: infra-solr-env
+    infra_solr_ssl_enabled: false
+
+RANGERADMIN:
+  - config_type: ranger-admin-site
+    ranger.service.http.enabled: true
+    ranger.service.https.attrib.clientAuth: false
+    ranger.service.https.attrib.ssl.enabled: false
+
+HBASE:
+  - config_type: hbase-site
+    hbase.ssl.enabled: false
+    hadoop.ssl.enabled: false
+
+ATLAS:
+  - config_type: application-properties
+    atlas.enableTLS: false
+    client.auth.enabled: false
+
+ZEPPELIN:
+  - config_type: zeppelin-config
+    zeppelin.ssl: false
+
+SPARK2:
+  - config_type: yarn-site
+    spark.authenticate: false
+
+  - config_type: spark2-defaults
+    spark.authenticate: false
+    spark.authenticate.enableSaslEncryption: false
+    spark.ssl.enabled: false
+    spark.ui.https.enabled: false
+
+  - config_type: spark2-hive-site-override
+    hive.server2.transport.mode: binary
+    hive.server2.use.SSL: false
+
+  - config_type: livy2-conf
+    delete: true
+    livy.keystore: $keystore
+    livy.keystore.password: $keystorepassword
+    livy.key-password: $keystorepassword
+
+STORM:
+  - config_type: storm-site
+    delete: true
+    ui.https.port: 8740
+    ui.https.keystore.type: jks
+    ui.https.keystore.path: $keystore
+    ui.https.keystore.password: $keystorepassword
+    ui.https.key.password: $keystorepassword
+    ui.https.truststore.path: $truststore
+    ui.https.truststore.password: $truststorepassword
+    ui.https.truststore.type: jks
+    drpc.https.port: 3778
+    drpc.https.keystore.type: jks
+    drpc.https.keystore.path: $keystore
+    drpc.https.keystore.password: $keystorepassword
+    drpc.https.key.password: $keystorepassword
+    drpc.https.truststore.path: $truststore
+    drpc.https.truststore.password: $truststorepassword
+    drpc.https.truststore.type: jks
+
+RANGERPLUGINS:
+  - config_type: ranger-test-policymgr-ssl
+    xasecure.policymgr.clientssl.keystore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-keystore.jks
+    xasecure.policymgr.clientssl.keystore.password: myKeyFilePassword
+    xasecure.policymgr.clientssl.truststore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-truststore.jks
+    xasecure.policymgr.clientssl.truststore.password: changeit
+
+  - config_type: ranger-hdfs-policymgr-ssl
+    xasecure.policymgr.clientssl.keystore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-keystore.jks
+    xasecure.policymgr.clientssl.keystore.password: myKeyFilePassword
+    xasecure.policymgr.clientssl.truststore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-truststore.jks
+    xasecure.policymgr.clientssl.truststore.password: changeit
+
+  - config_type: ranger-yarn-policymgr-ssl
+    xasecure.policymgr.clientssl.keystore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-keystore.jks
+    xasecure.policymgr.clientssl.keystore.password: myKeyFilePassword
+    xasecure.policymgr.clientssl.truststore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-truststore.jks
+    xasecure.policymgr.clientssl.truststore.password: changeit
+
+  - config_type: ranger-hive-policymgr-ssl
+    xasecure.policymgr.clientssl.keystore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-keystore.jks
+    xasecure.policymgr.clientssl.keystore.password: myKeyFilePassword
+    xasecure.policymgr.clientssl.truststore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-truststore.jks
+    xasecure.policymgr.clientssl.truststore.password: changeit
+
+  - config_type: ranger-hbase-policymgr-ssl
+    xasecure.policymgr.clientssl.keystore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-keystore.jks
+    xasecure.policymgr.clientssl.keystore.password: myKeyFilePassword
+    xasecure.policymgr.clientssl.truststore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-truststore.jks
+    xasecure.policymgr.clientssl.truststore.password: changeit
+
+  - config_type: ranger-atlas-policymgr-ssl
+    xasecure.policymgr.clientssl.keystore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-keystore.jks
+    xasecure.policymgr.clientssl.keystore.password: myKeyFilePassword
+    xasecure.policymgr.clientssl.truststore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-truststore.jks
+    xasecure.policymgr.clientssl.truststore.password: changeit
+
+  - config_type: ranger-knox-policymgr-ssl
+    xasecure.policymgr.clientssl.keystore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-keystore.jks
+    xasecure.policymgr.clientssl.keystore.password: myKeyFilePassword
+    xasecure.policymgr.clientssl.truststore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-truststore.jks
+    xasecure.policymgr.clientssl.truststore.password: changeit
+
+  - config_type: ranger-storm-policymgr-ssl
+    xasecure.policymgr.clientssl.keystore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-keystore.jks
+    xasecure.policymgr.clientssl.keystore.password: myKeyFilePassword
+    xasecure.policymgr.clientssl.truststore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-truststore.jks
+    xasecure.policymgr.clientssl.truststore.password: changeit
+
+  - config_type: ranger-kafka-policymgr-ssl
+    xasecure.policymgr.clientssl.keystore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-keystore.jks
+    xasecure.policymgr.clientssl.keystore.password: myKeyFilePassword
+    xasecure.policymgr.clientssl.truststore: /usr/hdp/current/hadoop-client/conf/ranger-plugin-truststore.jks
+    xasecure.policymgr.clientssl.truststore.password: changeit
