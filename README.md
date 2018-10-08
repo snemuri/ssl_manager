@@ -1,7 +1,7 @@
 
 ##Tool to enable SSL for the services in HDP stack
 
-Steps to run the SSL Manager: 
+Steps to run the SSL Manager: (on ambari-server node) 
 
 - Update ca.properties with java home, CA properties, Keystore & truststore passwords and the hostnames of cluster.
 - To enable ssl for all services and ui's :
