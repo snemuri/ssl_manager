@@ -180,6 +180,12 @@ RANGERPLUGINS:
     xasecure.policymgr.clientssl.truststore: $truststore
     xasecure.policymgr.clientssl.truststore.password: $truststorepassword
 
+  - config_type: ranger-nifi-policymgr-ssl
+    xasecure.policymgr.clientssl.keystore: $keystore
+    xasecure.policymgr.clientssl.keystore.password: $keystorepassword
+    xasecure.policymgr.clientssl.truststore: $truststore
+    xasecure.policymgr.clientssl.truststore.password: $truststorepassword
+
 HBASE:
   - config_type: hbase-site
     hbase.ssl.enabled: true
@@ -244,3 +250,53 @@ STORM:
     drpc.https.truststore.path: $truststore
     drpc.https.truststore.password: $truststorepassword
     drpc.https.truststore.type: jks
+
+NIFI:
+  - config_type: nifi-ambari-config
+    nifi.node.port: 
+
+  - config_type: nifi-properties
+    nifi.web.http.port:
+    nifi.security.keyPasswd: $keystorepassword
+    nifi.security.keystorePasswd: $keystorepassword
+    nifi.security.truststorePasswd: $truststorepassword
+
+  - config_type: nifi-ambari-ssl-config
+    nifi.ssl.isenabled: true
+    nifi.security.keystore: $keystore
+    nifi.security.keystoreType: jks
+    nifi.security.keystorePasswd: $keystorepassword
+    nifi.security.keyPasswd: $keystorepassword
+    nifi.security.truststore: $truststore
+    nifi.security.truststoreType: jks
+    nifi.security.truststorePasswd: $truststorepassword
+
+  - config_type: ranger-nifi-plugin-properties
+    nifi.authentication: SSL
+    nifi.ssl.keystore: $keystore
+    nifi.ssl.keystorePassword: $keystorepassword
+    nifi.ssl.keystoreType: jks
+    nifi.ssl.truststore: $truststore
+    nifi.ssl.truststoreType: jks
+    nifi.ssl.truststorePassword: $truststorepassword
+
+NIFI_REGISTRY:
+  - config_type: nifi-registry-ambari-config
+    nifi.registry.port:
+
+  - config_type: nifi-registry-ambari-ssl-config
+    nifi.registry.ssl.isenabled: true
+
+  - config_type: nifi-registry-ambari-ssl-config
+    nifi.registry.security.keystore: $keystore
+    nifi.registry.security.keystoreType: jks
+    nifi.registry.security.keystorePasswd: $keystorepassword
+    nifi.registry.security.keyPasswd: $keystorepassword
+    nifi.registry.security.truststore: $truststore
+    nifi.registry.security.truststoreType: jks
+    nifi.registry.security.truststorePasswd: $truststorepassword
+
+  - config_type: nifi-registry-properties
+    nifi.registry.security.keystorePasswd: $keystorepassword
+    nifi.registry.security.keyPasswd: $keystorepassword
+    nifi.registry.security.truststorePasswd: $truststorepassword
