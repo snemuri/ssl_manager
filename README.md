@@ -1,5 +1,5 @@
 
-##Tool to enable SSL for the services in HDP stack
+## Tool to enable SSL for the services in HDP stack
 
 Steps to run the SSL Manager: (on ambari-server node) 
 
@@ -48,7 +48,7 @@ Options:
   --cluster=CLUSTER     Name given to cluster. Ex: 'c1'
 ```
 
-##How to Build
+## How to Build
 
 - Make sure you are in ssl_manager directory : `cd ssl_manager`
 - Build using : 
